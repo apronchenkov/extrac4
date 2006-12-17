@@ -18,7 +18,9 @@
 
 /* Written by Simon Josefsson.  Partially adapted from GNU MailUtils
  * (mailbox/filter_trans.c, as of 2004-11-28).  Improved by review
- * from Paul Eggert, Bruno Haible, and Stepan Kasal.
+ * from Paul Eggert, Bruno Haible, and Stepan Kasal. Current
+ * modification by Alexander Pronchenkov.
+ * Modifed by Alexander Gennadyevich Pronvhenkov.
  *
  * See also RFC 3548 <http://www.ietf.org/rfc/rfc3548.txt>.
  *
@@ -63,37 +65,44 @@ static unsigned char to_uchar(char ch) {
    If OUTLEN is less than BASE64_LENGTH(INLEN), write as many bytes as
    possible. */
 size_t base64_encode(const char * in, size_t insize, char * out, size_t outsize) {
-		static const char b64str[65] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-		
+		static const char b64str[ 65 ] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+
 		const char * inmax = in + insize;
 		const char * outmin = out;
 		const char * outmax = out + outsize;
 
+		while( in + 3 <= inmax && out + 4 <= outmax ) {
+				*out++ = b64str[ to_uchar(in[0]) >> 2 ];
+				*out++ = b64str[ ( ( to_uchar(in[0] ) << 4 ) | ( to_uchar(in[1]) >> 4 ) ) & 0x3f ];
+				*out++ = b64str[ ( ( to_uchar(in[1]) << 2 ) | ( to_uchar(in[2]) >> 6 ) ) & 0x3f ];
+				*out++ = b64str[ to_uchar(in[2]) & 0x3f ];
+				in += 3;
+		}
+
 		while( in < inmax && out < outmax ) {
-		  
+			  
 				*out++ = b64str[ to_uchar(in[0]) >> 2 ];
 
 				if( outmax == out )
 						break;
 
-				if( inmax == in + 1 ) {
+				if( inmax == in + 1 ) 
 						*out++ = b64str[ ( to_uchar(in[0] ) << 4) & 0x3f ];
-						++in;
-				} else {
+				else 
 						*out++ = b64str[ ( ( to_uchar(in[0] ) << 4 ) | ( to_uchar(in[1]) >> 4 ) ) & 0x3f ];
-						++in;
-				}
+
+				++in;
 
 				if( outmax == out )
 						break;
 
-				if( inmax == in ) {
+				if( inmax == in ) 
 						*out++ = '=';
-				} else if( inmax == in + 1 ) {
-						*out++ = b64str[ ( to_uchar(in[0]) << 2 ) & 0x3f ];
-						++in;
-				} else {
-						*out++ = b64str[ ( ( to_uchar(in[0]) << 2 ) | ( to_uchar(in[1]) >> 6 ) ) & 0x3f ];
+				else {
+						if( inmax == in + 1 ) 
+							*out++ = b64str[ ( to_uchar(in[0]) << 2 ) & 0x3f ];
+						else
+							*out++ = b64str[ ( ( to_uchar(in[0]) << 2 ) | ( to_uchar(in[1]) >> 6 ) ) & 0x3f ];
 						++in;
 				}
 
@@ -123,18 +132,18 @@ size_t base64_encode(const char * in, size_t insize, char * out, size_t outsize)
 size_t base64_encode_alloc(const char *in, size_t inlen, char **out) {
 		size_t outlen = base64_length(inlen);
 
-							/* Check for overflow in outlen computation.
-							 *
-							 * If there is no overflow, outlen >= inlen.
-							 *
-							 * If the operation (inlen + 2) overflows then it yields at most +1, so
-							 * outlen is 0.
-							 *
-							 * If the multiplication overflows, we lose at least half of the
-							 * correct value, so the result is < ((inlen + 2) / 3) * 2, which is
-							 * less than (inlen + 2) * 0.66667, which is less than inlen as soon as
-							 * (inlen > 4).
-							 */
+		/* Check for overflow in outlen computation.
+		 *
+		 * If there is no overflow, outlen >= inlen.
+		 *
+		 * If the operation (inlen + 2) overflows then it yields at most +1, so
+		 * outlen is 0.
+		 *
+		 * If the multiplication overflows, we lose at least half of the
+		 * correct value, so the result is < ((inlen + 2) / 3) * 2, which is
+		 * less than (inlen + 2) * 0.66667, which is less than inlen as soon as
+		 * (inlen > 4).
+		 */
 		if( inlen > outlen ) {
 				*out = NULL;
 				return 0;
@@ -224,38 +233,38 @@ size_t base64_encode_alloc(const char *in, size_t inlen, char **out) {
    : (_) == '+' ? 62				\
    : (_) == '/' ? 63				\
    : -1)
-
+   
 static const signed char b64[0x100] = {
 		B64(0x00), B64(0x01), B64(0x02), B64(0x03), B64(0x04), B64(0x05), B64(0x06), B64(0x07),
-		B64(0x08), B64(0x09), B64(0x0a), B64(0x0b), B64(0x0c), B64(0x0d), B64(0x0e), B64(0x0f), 
+		B64(0x08), B64(0x09), B64(0x0a), B64(0x0b), B64(0x0c), B64(0x0d), B64(0x0e), B64(0x0f),
 		B64(0x10), B64(0x11), B64(0x12), B64(0x13), B64(0x14), B64(0x15), B64(0x16), B64(0x17),
-		B64(0x18), B64(0x19), B64(0x1a), B64(0x1b), B64(0x1c), B64(0x1d), B64(0x1e), B64(0x1f), 
+		B64(0x18), B64(0x19), B64(0x1a), B64(0x1b), B64(0x1c), B64(0x1d), B64(0x1e), B64(0x1f),
 		B64(0x20), B64(0x21), B64(0x22), B64(0x23), B64(0x24), B64(0x25), B64(0x26), B64(0x27),
-		B64(0x28), B64(0x29), B64(0x2a), B64(0x2b), B64(0x2c), B64(0x2d), B64(0x2e), B64(0x2f), 
+		B64(0x28), B64(0x29), B64(0x2a), B64(0x2b), B64(0x2c), B64(0x2d), B64(0x2e), B64(0x2f),
 		B64(0x30), B64(0x31), B64(0x32), B64(0x33), B64(0x34), B64(0x35), B64(0x36), B64(0x37),
-		B64(0x38), B64(0x39), B64(0x3a), B64(0x3b), B64(0x3c), B64(0x3d), B64(0x3e), B64(0x3f), 
+		B64(0x38), B64(0x39), B64(0x3a), B64(0x3b), B64(0x3c), B64(0x3d), B64(0x3e), B64(0x3f),
 		B64(0x40), B64(0x41), B64(0x42), B64(0x43), B64(0x44), B64(0x45), B64(0x46), B64(0x47),
-		B64(0x48), B64(0x49), B64(0x4a), B64(0x4b), B64(0x4c), B64(0x4d), B64(0x4e), B64(0x4f), 
+		B64(0x48), B64(0x49), B64(0x4a), B64(0x4b), B64(0x4c), B64(0x4d), B64(0x4e), B64(0x4f),
 		B64(0x50), B64(0x51), B64(0x52), B64(0x53), B64(0x54), B64(0x55), B64(0x56), B64(0x57),
-		B64(0x58), B64(0x59), B64(0x5a), B64(0x5b), B64(0x5c), B64(0x5d), B64(0x5e), B64(0x5f), 
+		B64(0x58), B64(0x59), B64(0x5a), B64(0x5b), B64(0x5c), B64(0x5d), B64(0x5e), B64(0x5f),
 		B64(0x60), B64(0x61), B64(0x62), B64(0x63), B64(0x64), B64(0x65), B64(0x66), B64(0x67),
-		B64(0x68), B64(0x69), B64(0x6a), B64(0x6b), B64(0x6c), B64(0x6d), B64(0x6e), B64(0x6f), 
+		B64(0x68), B64(0x69), B64(0x6a), B64(0x6b), B64(0x6c), B64(0x6d), B64(0x6e), B64(0x6f),
 		B64(0x70), B64(0x71), B64(0x72), B64(0x73), B64(0x74), B64(0x75), B64(0x76), B64(0x77),
-		B64(0x78), B64(0x79), B64(0x7a), B64(0x7b), B64(0x7c), B64(0x7d), B64(0x7e), B64(0x7f), 
+		B64(0x78), B64(0x79), B64(0x7a), B64(0x7b), B64(0x7c), B64(0x7d), B64(0x7e), B64(0x7f),
 		B64(0x80), B64(0x81), B64(0x82), B64(0x83), B64(0x84), B64(0x85), B64(0x86), B64(0x87),
-		B64(0x88), B64(0x89), B64(0x8a), B64(0x8b), B64(0x8c), B64(0x8d), B64(0x8e), B64(0x8f), 
+		B64(0x88), B64(0x89), B64(0x8a), B64(0x8b), B64(0x8c), B64(0x8d), B64(0x8e), B64(0x8f),
 		B64(0x90), B64(0x91), B64(0x92), B64(0x93), B64(0x94), B64(0x95), B64(0x96), B64(0x97),
-		B64(0x98), B64(0x99), B64(0x9a), B64(0x9b), B64(0x9c), B64(0x9d), B64(0x9e), B64(0x9f), 
+		B64(0x98), B64(0x99), B64(0x9a), B64(0x9b), B64(0x9c), B64(0x9d), B64(0x9e), B64(0x9f),
 		B64(0xa0), B64(0xa1), B64(0xa2), B64(0xa3), B64(0xa4), B64(0xa5), B64(0xa6), B64(0xa7),
-		B64(0xa8), B64(0xa9), B64(0xaa), B64(0xab), B64(0xac), B64(0xad), B64(0xae), B64(0xaf), 
+		B64(0xa8), B64(0xa9), B64(0xaa), B64(0xab), B64(0xac), B64(0xad), B64(0xae), B64(0xaf),
 		B64(0xb0), B64(0xb1), B64(0xb2), B64(0xb3), B64(0xb4), B64(0xb5), B64(0xb6), B64(0xb7),
-		B64(0xb8), B64(0xb9), B64(0xba), B64(0xbb), B64(0xbc), B64(0xbd), B64(0xbe), B64(0xbf), 
+		B64(0xb8), B64(0xb9), B64(0xba), B64(0xbb), B64(0xbc), B64(0xbd), B64(0xbe), B64(0xbf),
 		B64(0xc0), B64(0xc1), B64(0xc2), B64(0xc3), B64(0xc4), B64(0xc5), B64(0xc6), B64(0xc7),
-		B64(0xc8), B64(0xc9), B64(0xca), B64(0xcb), B64(0xcc), B64(0xcd), B64(0xce), B64(0xcf), 
+		B64(0xc8), B64(0xc9), B64(0xca), B64(0xcb), B64(0xcc), B64(0xcd), B64(0xce), B64(0xcf),
 		B64(0xd0), B64(0xd1), B64(0xd2), B64(0xd3), B64(0xd4), B64(0xd5), B64(0xd6), B64(0xd7),
-		B64(0xd8), B64(0xd9), B64(0xda), B64(0xdb), B64(0xdc), B64(0xdd), B64(0xde), B64(0xdf), 
+		B64(0xd8), B64(0xd9), B64(0xda), B64(0xdb), B64(0xdc), B64(0xdd), B64(0xde), B64(0xdf),
 		B64(0xe0), B64(0xe1), B64(0xe2), B64(0xe3), B64(0xe4), B64(0xe5), B64(0xe6), B64(0xe7),
-		B64(0xe8), B64(0xe9), B64(0xea), B64(0xeb), B64(0xec), B64(0xed), B64(0xee), B64(0xef), 
+		B64(0xe8), B64(0xe9), B64(0xea), B64(0xeb), B64(0xec), B64(0xed), B64(0xee), B64(0xef),
 		B64(0xf0), B64(0xf1), B64(0xf2), B64(0xf3), B64(0xf4), B64(0xf5), B64(0xf6), B64(0xf7),
 		B64(0xf8), B64(0xf9), B64(0xfa), B64(0xfb), B64(0xfc), B64(0xfd), B64(0xfe), B64(0xff)
 };
@@ -282,80 +291,47 @@ bool isbase64 (char ch) {
    encountered, decoding is stopped and false is returned.  This means
    that, when applicable, you must remove any line terminators that is
    part of the data stream before calling this function.  */
-bool base64_decode(const char * in, size_t insize, char * out, size_t *outsize) {
-		const char * inmax_basic = in + insize - 4;
+bool base64_decode(const char * in, size_t insize, char * out, size_t * outsize) {
 		const char * inmax = in + insize;
 		const char * outmin = out;
 		const char * outmax = out + *outsize;
 
 		if( 0 != insize%4 )
 				return false;
-		
-		while( in < inmax_basic && out < outmax ) {
 
-				if( !isbase64(in[0]) || !isbase64(in[1]) ||
-					!isbase64(in[2]) || !isbase64(in[3]) )
-						break;
-				
+		while( in + 4 < inmax && out + 3 <= outmax ) {
+				if( !isbase64(in[0]) || !isbase64(in[1]) || !isbase64(in[2]) || !isbase64(in[3]) )
+						return false;
+
 				*out++ = ( b64[ to_uchar(in[0]) ] << 2 ) | ( b64[ to_uchar(in[1]) ] >> 4 );
-				++in;
-
-				if( outmax == out )
-						break;
-
-				*out++ = ( b64[ to_uchar(in[0]) ] << 4 ) | ( b64[ to_uchar(in[1]) ] >> 2);
-				++in;
-
-				if( outmax == out )
-						break;
-
-				*out++ = ( b64[ to_uchar(in[0]) ] << 6 ) | ( b64[ to_uchar(in[1]) ] );
-				in += 2;
+				*out++ = ( b64[ to_uchar(in[1]) ] << 4 ) | ( b64[ to_uchar(in[2]) ] >> 2);
+				*out++ = ( b64[ to_uchar(in[2]) ] << 6 ) | ( b64[ to_uchar(in[3]) ] );
+				in += 4;
 		}
 
-		do {
-				if( in != inmax_basic || out == outmax ) 
-						break;
-				
-				if( !isbase64(in[0]) || !isbase64(in[1]) )
-						break;
+		if( out == outmax )
+				return true;
 
-				*out++ = ( b64[ to_uchar(in[0]) ] << 2 ) | ( b64[ to_uchar(in[1]) ] >> 4 );
-				++in;
-				if( outmax == out )
-						break;
-
-				if( '=' == in[1] ) {
-						in += ( '=' == in[2] ) ? 3 : 0;
-						break;
-				}
-
-				if( !isbase64 (in[1]) )
-						break;
-
-				*out++ = ( b64[ to_uchar(in[0]) ] << 4 ) | ( b64[ to_uchar(in[1]) ] >> 2);
-				++in;
-				if( outmax == out )
-						break;
-						
-				if( in[1] == '=' ) {
-						++in;
-						break;
-				}
-				
-				if( !isbase64( in[1] ) )
-						break;
-								
-				*out++ = ( b64[ to_uchar(in[0]) ] << 6 ) | ( b64[ to_uchar(in[1]) ] );
-				in += 2;
-
-		} while( false );
-
-		if( in != inmax )
+		if( !isbase64(in[0]) || !isbase64(in[1]) )
 				return false;
 
-		*outsize = out - outmin;
+		if( inmax == in + 4 && '=' == in[3] ) {
+				if( '=' != in[2] && !isbase64(in[2]) )
+				return false;
+		} else if( !isbase64(in[2]) || !isbase64(in[3]) )
+				return false;
 
+
+		*out++ = ( b64[ to_uchar(in[0]) ] << 2 ) | ( b64[ to_uchar(in[1]) ] >> 4 );
+
+		if( outmax != out && '=' != in[2] ) {
+				*out++ = ( b64[ to_uchar(in[1]) ] << 4 ) | ( b64[ to_uchar(in[2]) ] >> 2);
+
+				if( outmax != out && in[3] != '=' ) 
+					*out++ = ( b64[ to_uchar(in[2]) ] << 6 ) | ( b64[ to_uchar(in[3]) ] );
+		}
+
+		*outsize = out - outmin;
 		return true;
 }
 
@@ -371,11 +347,11 @@ bool base64_decode(const char * in, size_t insize, char * out, size_t *outsize) 
    input was invalid, in which case *OUT is NULL and *OUTLEN is
    undefined. */
 bool base64_decode_alloc(const char *in, size_t inlen, char **out, size_t *outlen) {
-							/* This may allocate a few bytes too much, depending on input,
-							   but it's not worth the extra CPU time to compute the exact amount.
-							   The exact amount is 3 * inlen / 4, minus 1 if the input ends
-							   with "=" and minus another 1 if the input ends with "==".
-							   Dividing before multiplying avoids the possibility of overflow.  */
+		/* This may allocate a few bytes too much, depending on input,
+		   but it's not worth the extra CPU time to compute the exact amount.
+		   The exact amount is 3 * inlen / 4, minus 1 if the input ends
+		   with "=" and minus another 1 if the input ends with "==".
+		   Dividing before multiplying avoids the possibility of overflow.  */
 		const size_t needlen = 3 * (inlen / 4) + 2;
 		
 		*out = (char*)malloc(needlen);
@@ -387,6 +363,22 @@ bool base64_decode_alloc(const char *in, size_t inlen, char **out, size_t *outle
 				*out = NULL;
 				return false;
 		}
+
+		return true;
+}
+
+/* Return true if IN is a correct Base64 encoded data, and false 
+   otherwise.  */
+bool base64_check(const char *in, size_t inlen) {
+		size_t i;
+
+		if( 0 != inlen % 4 )
+				return false;
+
+		for(i = 0; i < inlen && isbase64(in[i]); ++i);
+
+		if( i < inlen && !(i == inlen - 1 && '=' == in[i]) && !(i == inlen - 2 && '=' == in[i] && '=' == in[i + 1]) )
+				return false;
 
 		return true;
 }
