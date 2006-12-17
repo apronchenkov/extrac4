@@ -8,6 +8,10 @@
 
 #include "base64.h"
 
+#ifdef _WIN32
+typedef int mode_t;
+#endif //_WIN32
+
 const char *nl = "\n";
 const size_t nl_len = sizeof("\n") - 1;
 
