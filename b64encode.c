@@ -80,7 +80,7 @@ int main(int argc, const char **argv) {
 				usage();
 
 		if( NULL == (in = fopen(argv[1], "rb")) ) {
-				fprintf(stderr, "%s: Ïpen for read \"%s\": %s\n", argv_0, argv[1], strerror(errno));
+				fprintf(stderr, "%s: open for read \"%s\": %s\n", argv_0, argv[1], strerror(errno));
 				return -1;
 		}
 
