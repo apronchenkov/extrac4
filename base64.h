@@ -21,7 +21,11 @@
 # define BASE64_H
 
 /* Get size_t. */
+#ifdef __cplusplus
+# include <cstddef>
+#else
 # include <stddef.h>
+#endif
 
 /* Get BOOL. */
 #ifndef __cplusplus
@@ -35,15 +39,15 @@ typedef enum {false, true} bool;
 #ifdef __cplusplus
 extern "C" {
 #endif
-		bool isbase64(char ch);
+	bool isbase64(char ch);
 
-		size_t base64_encode(const char * in, size_t inlen, char * out, size_t outlen);
+	size_t base64_encode(const char * in, size_t inlen, char * out, size_t outlen);
 
-		size_t base64_encode_alloc(const char *in, size_t inlen, char **out);
+	size_t base64_encode_alloc(const char *in, size_t inlen, char **out);
 
-		bool base64_decode(const char * in, size_t inlen, char * out, size_t *outlen);
+	bool base64_decode(const char * in, size_t inlen, char * out, size_t *outlen);
 
-		bool base64_decode_alloc(const char *in, size_t inlen, char **out, size_t *outlen);
+	bool base64_decode_alloc(const char *in, size_t inlen, char **out, size_t *outlen);
 
 #ifdef __cplusplus
 }

@@ -8,30 +8,37 @@ typedef unsigned long u_int32_t;
 #endif
 
 #ifdef __cplusplus
+#include <cstddef>
+#else
+#include <stddef.h>
+#endif
+
+#ifdef __cplusplus
 extern "C" {
 #endif
-							/** Процедура строящая таблицу для расчёта CRC32.
-							 */
-		void crc_gen();
+	/**
+	 * п÷я─п╬я├п╣п╢я┐я─п╟ я│я┌я─п╬я▐я┴п╟я▐ я┌п╟п╠п╩п╦я├я┐ п╢п╩я▐ я─п╟я│я┤я▒я┌п╟ CRC32.
+	 */
+	void crc_gen();
 
-							/** Функция вычисляющая значение CRC32 для строки.
-								@param crc текущее значение crc
-								@param string входная строка
-								@return общая контрольная сумма
-							*/
-		u_int32_t crc_calc_string(u_int32_t crc, const char *string);
+	/** п╓я┐п╫п╨я├п╦я▐ п╡я▀я┤п╦я│п╩я▐я▌я┴п╟я▐ п╥п╫п╟я┤п╣п╫п╦п╣ CRC32 п╢п╩я▐ я│я┌я─п╬п╨п╦.
+	 * @param crc я┌п╣п╨я┐я┴п╣п╣ п╥п╫п╟я┤п╣п╫п╦п╣ crc
+	 * @param string п╡я┘п╬п╢п╫п╟я▐ я│я┌я─п╬п╨п╟
+	 * @return п╬п╠я┴п╟я▐ п╨п╬п╫я┌я─п╬п╩я▄п╫п╟я▐ я│я┐п╪п╪п╟
+	 */
+	u_int32_t crc_calc_string(u_int32_t crc, const char *string);
 
-							/** Функция вычисляющая значение CRC для массива байт.
-								@param текущее значение crc
-								@param array входной массив байтов
-								@param size длинна массива байтов
-								@return общая контрольная сумма
-							*/
-		u_int32_t crc_calc_array(u_int32_t crc, const char *array, size_t size);
+	/**
+	 * п╓я┐п╫п╨я├п╦я▐ п╡я▀я┤п╦я│п╩я▐я▌я┴п╟я▐ п╥п╫п╟я┤п╣п╫п╦п╣ CRC п╢п╩я▐ п╪п╟я│я│п╦п╡п╟ п╠п╟п╧я┌.
+	 * @param я┌п╣п╨я┐я┴п╣п╣ п╥п╫п╟я┤п╣п╫п╦п╣ crc
+	 * @param array п╡я┘п╬п╢п╫п╬п╧ п╪п╟я│я│п╦п╡ п╠п╟п╧я┌п╬п╡
+	 * @param size п╢п╩п╦п╫п╫п╟ п╪п╟я│я│п╦п╡п╟ п╠п╟п╧я┌п╬п╡
+	 * @return п╬п╠я┴п╟я▐ п╨п╬п╫я┌я─п╬п╩я▄п╫п╟я▐ я│я┐п╪п╪п╟
+	 */
+	u_int32_t crc_calc_array(u_int32_t crc, const char *array, size_t size);
 
 #ifdef __cplusplus
 }
 #endif
 
-		
 #endif //__crc_h__
