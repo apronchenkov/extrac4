@@ -7,5 +7,5 @@ clean:
 
 b64encode: b64encode.c base64.c
 
-extrac4: extrac4.cpp base64.c crc.c
+extrac4: extrac4.c base64.c crc.c
 
