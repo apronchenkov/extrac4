@@ -41,4 +41,4 @@ extern "C" {
 }
 #endif
 
-#endif //__crc_h__
+#endif /*_crc_h__*/
