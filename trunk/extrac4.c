@@ -60,6 +60,14 @@
 #define END_TAG              ("<-->")
 #define END_TAG_LEN          (sizeof(END_TAG) - 1)
 
+/** Расширенная версия открывающегося тега. */
+#define BEGIN2_TAG            ("//<++>")
+#define BEGIN2_TAG_LEN        (sizeof(BEGIN2_TAG) - 1)
+
+/** Расширенная версия закрывающегося тега. */
+#define END2_TAG              ("//<-->")
+#define END2_TAG_LEN          (sizeof(END2_TAG) - 1)
+
 /** Максимальная длинна строки. */
 /** Крайне желательно, чтобы эта величина делилась на 4 (связано с преобразованием base64). */
 #define MAX_LINESIZE         (2048)
@@ -116,16 +124,13 @@ u_int32_t crc_value;
 
 /** Функция выполняет разбора тега.
  * На основе тэга устанавливаются глобальные переменные: out_pathname, ...
- * @param head строка содержащая заголовок тэга
+ * @param head строка с параметрами открывающегося тэга
  * @return true -- разбор успешен; false -- заголовок содержит ошибку.
  */
 bool parse_tag(char * head) {
-        char * b = NULL;
-        char * n = NULL;
-        char * nmax = NULL;
-
-	/* проходим имя тэга */
-	b = head + BEGIN_TAG_LEN;
+	char * b = head;
+	char * n = NULL;
+	char * nmax = NULL;
 
 	/* проходим ведущие пробелы */
 	while( isspace(*b) ) ++b;
@@ -144,7 +149,7 @@ bool parse_tag(char * head) {
 
 	/* разбор имени */
 	while( true ) {
-                const char * t = NULL;
+		const char * t = NULL;
 
 		if( '.' == *b || ('\\' == *b && '.' == b[1]) ) {
 			if( !(flags & QUIET ) )
@@ -239,7 +244,7 @@ bool parse_tag(char * head) {
 		} else if( 0 == strncmp("comment", b, 7) ) {
 			break;
 
-                } else { /* CRC32 */
+		} else { /* CRC32 */
 			errno = 0;
 			crc_old_value = strtoul(b, &b, 16);
 
@@ -294,16 +299,23 @@ bool unpack_b64(FILE *out, char *line) {
  * @param in поток входного файла.
  */
 void parse_file(FILE *in) {
+	char b_tmp[ MAX_LINESIZE ];
 
 	while( 1 ) {
-		char b_tmp[ MAX_LINESIZE ];
+		char * b = NULL;
 
 		/* поиск тега начала блока */
-		while( NULL != fgets(b_tmp, MAX_LINESIZE - 1, in) && 0 != strncmp(b_tmp, BEGIN_TAG, BEGIN_TAG_LEN) );
+		while( b == NULL && fgets(b_tmp, sizeof(b_tmp), in) ) {
+			if( 0 == strncmp(b_tmp, BEGIN_TAG, BEGIN_TAG_LEN) )
+				b = b_tmp + BEGIN_TAG_LEN;
+			if( 0 == strncmp(b_tmp, BEGIN2_TAG, BEGIN2_TAG_LEN) )
+				b = b_tmp + BEGIN2_TAG_LEN;
+		}
 
 		/* если произошла ошибка или наступил конец файла, завершаем разбор */
-		if( ferror(in) || feof(in) )
+		if( b == NULL )
 			break;
+
 		/* увеличиваем счётчик найденных тегов */
 		++stat_found;
 
@@ -313,7 +325,7 @@ void parse_file(FILE *in) {
 		crc_value = 0;
 		/* приём позволяющий измежать использования goto */
 		/* разбор заголовка */
-		while( parse_tag(b_tmp) ) {
+		while( parse_tag(b) ) {
 			char *bp;
 			FILE *out;
 
@@ -344,7 +356,12 @@ void parse_file(FILE *in) {
 				break;
 			}
 			/* распаковываем содержимое файла */
-			while( fgets(b_tmp, sizeof(b_tmp), in) && 0 != strncmp (b_tmp, END_TAG, END_TAG_LEN) ) {
+			while( fgets(b_tmp, sizeof(b_tmp), in) ) {
+				if( 0 == strncmp(b_tmp, END_TAG, END_TAG_LEN) )
+					break;
+				if( 0 == strncmp(b_tmp, END2_TAG, END2_TAG_LEN) )
+					break;
+
 				if( TXT == format ) {
 					if( !unpack_txt(out, b_tmp) )
 						break;
@@ -356,28 +373,32 @@ void parse_file(FILE *in) {
 					crc_value = crc_calc_string(crc_value, b_tmp);
 
 			}
-                        {
-        			/* сохраняем флаг ошибки. */
-                        	int rec = ferror(out);
+			{
+				/* сохраняем флаг ошибки. */
+				int rec = ferror(out);
 
-                                fclose(out);
-                                /* проверяем флаг ошибки. */
-                                if( rec ) {
-                                        if( !(flags & QUIET) )
-                                                fprintf(stderr, "%s", ". write error occurred");
-                                        else
-                                                fprintf(stderr, "%s: %s '%s'.\n", in_pathname, "Write error occurred during extracting", out_pathname);
-                                        break;
-                                }
-                        }
+				fclose(out);
+				/* проверяем флаг ошибки. */
+				if( rec ) {
+					if( !(flags & QUIET) )
+						fprintf(stderr, "%s", ". write error occurred");
+					else
+						fprintf(stderr, "%s: %s '%s'.\n", in_pathname, "Write error occurred during extracting", out_pathname);
+					break;
+				}
+			}
 
 			++stat_extracted;
 
 			break;
 		}
+
 		/* пропускаем всю оставшуюся информацию до завершающего тэга */
 		/* (необходимо в случае ошибки) */
-		while( 0 != strncmp(b_tmp, END_TAG, END_TAG_LEN) && fgets(b_tmp, sizeof(b_tmp), in) );
+		while( 0 != strncmp(b_tmp, END_TAG, END_TAG_LEN) && 0 != strncmp(b_tmp, END2_TAG, END2_TAG_LEN) ) {
+			if( NULL == fgets(b_tmp, sizeof(b_tmp), in) )
+				break;
+		}
 
 		/* если произошла ошибка ввода */
 		if( ferror(in) )
