@@ -52,68 +52,66 @@
 
 #define VERSION_STR          ("20060909 revision d")
 
-/// Открывающийся тэг.
+/** Открывающийся тэг. */
 #define BEGIN_TAG            ("<++>")
 #define BEGIN_TAG_LEN        (sizeof(BEGIN_TAG) - 1)
 
-/// Закрывающийся тэг.
+/** Закрывающийся тэг. */
 #define END_TAG              ("<-->")
 #define END_TAG_LEN          (sizeof(END_TAG) - 1)
 
-/// Максимальная длинна строки.
-/// Крайне желательно, чтобы эта величина делилась на 4 (связано с преобразованием base64).
+/** Максимальная длинна строки. */
+/** Крайне желательно, чтобы эта величина делилась на 4 (связано с преобразованием base64). */
 #define MAX_LINESIZE         (2048)
 
-/// Максимальный размер для строки путь/имя.
+/** Максимальный размер для строки путь/имя. */
 #define MAX_PATHNAME         (1024)
 
 
-/// Имя программы.
+/** Имя программы. */
 const char *prog_name;
 
-/// Флаги выполнения.
+/** Флаги выполнения. */
 const int QUIET            = 1;
 int flags;
 
-/// Статистика: количество найденных записей.
+/** Статистика: количество найденных записей. */
 int stat_found;
 
-/// Статистика: количество успешно распакованных записей.
+/** Статистика: количество успешно распакованных записей. */
 int stat_extracted;
 
-/// ПутьИмя входного файла.
+/** ПутьИмя входного файла. */
 char *in_pathname;
 
-/// ПутьИмя выходного файла.
+/** ПутьИмя выходного файла. */
 char out_pathname[ MAX_PATHNAME + 1 ];
 
-/// Формат текущей записи.
+/** Формат текущей записи. */
 enum{TXT, B64} format;
 
 
-/// Флаг проверки контрольной суммы
+/** Флаг проверки контрольной суммы .*/
 bool crc_check_flag;
 
-/// Исходная контрольная сумма.
+/** Исходная контрольная сумма. */
 u_int32_t crc_old_value;
-/// Новая контрольная сумма.
+/** Новая контрольная сумма. */
 u_int32_t crc_value;
 
 
-/// Множество всех символов.
-inline bool isall(char c) {return true;}
-
-/// Множество символов -- признаков конца строки.
-inline bool iseol(char c) {return ('\0' == c || '\n' == c || '\r' == c);}
-
-/// Множество пробельных символов.
-inline bool isspace(char c) {return (' ' == c || '\t' == c);}
-/// Множество специальных символов.
-inline bool isspecial(char c) {return ('\\' == c || '/' == c);}
-/// Расширенное множество (простых) символов.
-inline bool isextra(char c) {return !iseol(c);}
-/// Множество простых символов.
-inline bool ischar(char c) {return (isextra(c) && !isspace(c) && !isspecial(c));}
+/** Множество всех символов. */
+#define isall(c) (true)
+/** Множество символов -- признаков конца строки. */
+#define iseol(c) ('\0' == (c) || '\n' == (c) || '\r' == (c))
+/** Множество пробельных символов. */
+#define isspace(c) (' ' == (c) || '\t' == (c))
+/** Множество специальных символов. */
+#define isspecial(c) ('\\' == (c) || '/' == (c))
+/** Расширенное множество (простых) символов. */
+#define isextra(c) (!iseol(c))
+/** Множество простых символов. */
+#define ischar(c) (isextra(c) && !isspace(c) && !isspecial(c))
 
 
 /** Функция выполняет разбора тега.
@@ -122,11 +120,16 @@ inline bool ischar(char c) {return (isextra(c) && !isspace(c) && !isspecial(c));
  * @return true -- разбор успешен; false -- заголовок содержит ошибку.
  */
 bool parse_tag(char * head) {
-	// проходим имя тэга
-	char * b = head + BEGIN_TAG_LEN;
-	// проходим ведущие пробелы
+        char * b = NULL;
+        char * n = NULL;
+        char * nmax = NULL;
+
+	/* проходим имя тэга */
+	b = head + BEGIN_TAG_LEN;
+
+	/* проходим ведущие пробелы */
 	while( isspace(*b) ) ++b;
-	// должно присутствовать путь_имя файла
+	/* должно присутствовать путь_имя файла */
 	if( iseol(*b) ) {
 		if( !(flags & QUIET ) )
 			fprintf(stderr, "%s", "Incorrect tag");
@@ -135,12 +138,14 @@ bool parse_tag(char * head) {
 		return false;
 	}
 
-	// готовимся к разбору имени
-	char *n = out_pathname;
-	const char *nmax = out_pathname + sizeof(out_pathname) - 1;
+	/* готовимся к разбору имени */
+	n = out_pathname;
+	nmax = out_pathname + sizeof(out_pathname) - 1;
 
-	// разбор имени
+	/* разбор имени */
 	while( true ) {
+                const char * t = NULL;
+
 		if( '.' == *b || ('\\' == *b && '.' == b[1]) ) {
 			if( !(flags & QUIET ) )
 				fprintf(stderr, "%s", "Incorrect pathname field");
@@ -149,7 +154,7 @@ bool parse_tag(char * head) {
 			return false;
 		}
 
-		const char *t = n;
+		t = n;
 		while( true ) {
 			while( ischar(*b) && n + 1 != nmax )
 				*n++ = *b++;
@@ -210,7 +215,7 @@ bool parse_tag(char * head) {
 
 	*n = '\0';
 
-	// пробел перед опциями
+	/* пробел перед опциями */
 	while( isspace(*b) ) ++b;
 
 	while( !iseol(*b) ) {
@@ -231,7 +236,10 @@ bool parse_tag(char * head) {
 			format = B64;
 			b += 6;
 
-		} else {// CRC32
+		} else if( 0 == strncmp("comment", b, 7) ) {
+			break;
+
+                } else { /* CRC32 */
 			errno = 0;
 			crc_old_value = strtoul(b, &b, 16);
 
@@ -263,11 +271,11 @@ bool unpack_txt(FILE *out, char *line) {
  * Функция распаковки b64-файлов.
  */
 bool unpack_b64(FILE *out, char *line) {
-	size_t line_len = strlen(line);
-	while( iseol( line[line_len - 1] ) ) --line_len;
-
 	char outbuf[ MAX_LINESIZE ];
 	size_t outlen = sizeof(outbuf);
+	size_t line_len = strlen(line);
+
+	while( iseol( line[line_len - 1] ) ) --line_len;
 
 	if( false == base64_decode(line, line_len, outbuf, &outlen) ) {
 		if( !(flags & QUIET ) )
@@ -290,28 +298,28 @@ void parse_file(FILE *in) {
 	while( 1 ) {
 		char b_tmp[ MAX_LINESIZE ];
 
-		// поиск тега начала блока
+		/* поиск тега начала блока */
 		while( NULL != fgets(b_tmp, MAX_LINESIZE - 1, in) && 0 != strncmp(b_tmp, BEGIN_TAG, BEGIN_TAG_LEN) );
 
-		// если произошла ошибка или наступил конец файла, завершаем разбор
+		/* если произошла ошибка или наступил конец файла, завершаем разбор */
 		if( ferror(in) || feof(in) )
 			break;
-		// увеличиваем счётчик найденных тегов
+		/* увеличиваем счётчик найденных тегов */
 		++stat_found;
 
-		// установка параметров по умолчанию
+		/* установка параметров по умолчанию */
 		format = TXT;
 		crc_check_flag = false;
 		crc_value = 0;
-		// приём позволяющий измежать использования goto
-		// разбор заголовка
+		/* приём позволяющий измежать использования goto */
+		/* разбор заголовка */
 		while( parse_tag(b_tmp) ) {
 			char *bp;
 			FILE *out;
 
 			if( !(flags & QUIET) )
 				fprintf(stderr, "  Extracting '%s'..", out_pathname);
-			// создаём ветку каталогов
+			/* создаём ветку каталогов */
 			for(bp = out_pathname; NULL != (bp = strchr(bp, '/')); ++bp) {
 				*bp = '\0';
 				if( -1 == mkdir(out_pathname, 0755) && EEXIST != errno )
@@ -319,7 +327,7 @@ void parse_file(FILE *in) {
 				*bp = '/';
 			}
 
-			// если не удалось создать ветку каталогов, выводим ошибку и пропускаем данный тег
+			/* если не удалось создать ветку каталогов, выводим ошибку и пропускаем данный тег */
 			if( NULL != bp ) {
 				if( !(flags & QUIET ) )
 					fprintf(stderr, "%s '%s'", ". Can't create directory", out_pathname);
@@ -327,7 +335,7 @@ void parse_file(FILE *in) {
 					fprintf(stderr, "%s: %s '%s'.\n", in_pathname, "Can't create directory", out_pathname);
 				break;
 			}
-			// если не удалось создать/открыть файл, выводим ошибку и пропускаем данный тег
+			/* если не удалось создать/открыть файл, выводим ошибку и пропускаем данный тег */
 			if( !(out = fopen(out_pathname, "wb")) ) {
 				if( !(flags & QUIET) )
 					fprintf(stderr, "%s", ". Can't create/open file");
@@ -335,7 +343,7 @@ void parse_file(FILE *in) {
 					fprintf(stderr, "%s: %s '%s'.\n", in_pathname, "Can't create/open file", out_pathname);
 				break;
 			}
-			// распаковываем содержимое файла
+			/* распаковываем содержимое файла */
 			while( fgets(b_tmp, sizeof(b_tmp), in) && 0 != strncmp (b_tmp, END_TAG, END_TAG_LEN) ) {
 				if( TXT == format ) {
 					if( !unpack_txt(out, b_tmp) )
@@ -348,33 +356,34 @@ void parse_file(FILE *in) {
 					crc_value = crc_calc_string(crc_value, b_tmp);
 
 			}
-			// сохраняем флаг ошибки.
-			int rec = ferror(out);
+                        {
+        			/* сохраняем флаг ошибки. */
+                        	int rec = ferror(out);
 
-			fclose(out);
-			// проверяем флаг ошибки.
-			if( rec ) {
-				if( !(flags & QUIET) )
-					fprintf(stderr, "%s", ". write error occurred");
-				else
-					fprintf(stderr, "%s: %s '%s'.\n", in_pathname, "Write error occurred during extracting", out_pathname);
-				break;
-			}
+                                fclose(out);
+                                /* проверяем флаг ошибки. */
+                                if( rec ) {
+                                        if( !(flags & QUIET) )
+                                                fprintf(stderr, "%s", ". write error occurred");
+                                        else
+                                                fprintf(stderr, "%s: %s '%s'.\n", in_pathname, "Write error occurred during extracting", out_pathname);
+                                        break;
+                                }
+                        }
 
 			++stat_extracted;
 
 			break;
 		}
-		// пропускаем всю оставшуюся информацию до завершающего тэга
-		// (необходимо в случае ошибки)
+		/* пропускаем всю оставшуюся информацию до завершающего тэга */
+		/* (необходимо в случае ошибки) */
 		while( 0 != strncmp(b_tmp, END_TAG, END_TAG_LEN) && fgets(b_tmp, sizeof(b_tmp), in) );
 
-		// если произошла ошибка ввода
+		/* если произошла ошибка ввода */
 		if( ferror(in) )
 			break;
 
-		// проверяем контрольную сумму
-		// проверяем контрольную сумму
+		/* проверяем контрольную сумму */
 		if( crc_check_flag ) {
 
 			if( crc_old_value == crc_value ) {
@@ -387,7 +396,7 @@ void parse_file(FILE *in) {
 					fprintf(stderr, "%s: %s: %s (%08lx != %08lx).\n", in_pathname, out_pathname, "CRC32 faild", crc_old_value, crc_value);
 			}
 		}
-		// завершаем работу с текущим тэгом.
+		/* завершаем работу с текущим тэгом. */
 		if( !(flags & QUIET) )
 			fprintf(stderr, ".\n");
 	}
@@ -435,19 +444,21 @@ static void parse_args(int argc, char **argv) {
  * Начальная функция программы.
  */
 int main(int argc, char **argv) {
-	// запоминаем имя программы
+	int i;
+
+	/* запоминаем имя программы */
 	prog_name = argv[0];
 
 	parse_args(argc, argv);
 
 	crc_gen();
-	// последовательно просматриваем аргументы командной строки
-	int i;
+
+	/* последовательно просматриваем аргументы командной строки */
 	for(i = optind; i < argc; ++i) {
 		FILE *in;
 
 		in_pathname = argv[i];
-		// открываем файл
+		/* открываем файл */
 		if( 0 == strcmp(in_pathname, "-") ) {
 			in = stdin;
 			in_pathname = "stdin";
@@ -468,10 +479,10 @@ int main(int argc, char **argv) {
 		fclose(in);
 	}
 
-	// вывод статистики
+	/* вывод статистики */
 	fprintf(stderr, "There are %d record(s), extracted %d record(s).\n", stat_found, stat_extracted);
 
-	// обработка статистики
+	/* обработка статистики */
 	if( stat_extracted == stat_found )
 		return EXIT_SUCCESS;
 
