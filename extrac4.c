@@ -409,12 +409,12 @@ void parse_file(FILE *in) {
 
 			if( crc_old_value == crc_value ) {
 				if( !(flags & QUIET) )
-					fprintf(stderr, "%s (%08lx)", ". CRC32 verified", crc_value);
+					fprintf(stderr, "%s (%08x)", ". CRC32 verified", crc_value);
 			} else {
 				if( !(flags & QUIET) )
-					fprintf(stderr, "%s (%08lx != %08lx)", ". CRC32 failed", crc_old_value, crc_value);
+					fprintf(stderr, "%s (%08x != %08x)", ". CRC32 failed", crc_old_value, crc_value);
 				else
-					fprintf(stderr, "%s: %s: %s (%08lx != %08lx).\n", in_pathname, out_pathname, "CRC32 faild", crc_old_value, crc_value);
+					fprintf(stderr, "%s: %s: %s (%08x != %08x).\n", in_pathname, out_pathname, "CRC32 faild", crc_old_value, crc_value);
 			}
 		}
 		/* завершаем работу с текущим тэгом. */
